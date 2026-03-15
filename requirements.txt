@@ -1,3 +1,6 @@
+setuptools==65.5.0
+wheel
+ml-dtypes==0.2.0
 absl-py==2.4.0
 asgiref==3.11.1
 astunparse==1.6.3
@@ -73,7 +76,7 @@ SQLAlchemy==2.0.24
 sqlparse==0.5.5
 tensorboard==2.15.2
 tensorboard-data-server==0.7.2
-tensorflow==2.15.0
+tensorflow==2.13.0
 tensorflow-estimator==2.15.0
 tensorflow-intel==2.15.0
 tensorflow-io-gcs-filesystem==0.31.0
