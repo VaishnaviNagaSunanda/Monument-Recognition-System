@@ -14,8 +14,8 @@ from .models import UserRegistrationModel
 from django.conf import settings
 # import pandas as pd
 import numpy as np
-import seaborn as sns
-import matplotlib.pyplot as plt
+# import seaborn as sns
+# import matplotlib.pyplot as plt
 import matplotlib.ticker as plticker
 import datetime as dt
 from sklearn import preprocessing, metrics
