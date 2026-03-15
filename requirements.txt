@@ -1,6 +1,7 @@
 setuptools==65.5.0
 wheel
 ml-dtypes==0.2.0
+tensorflow-cpu==2.13.0
 absl-py==2.4.0
 asgiref==3.11.1
 astunparse==1.6.3
