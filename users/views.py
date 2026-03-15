@@ -12,7 +12,7 @@ import Monuments_Identification
 from .forms import UserRegistrationForm
 from .models import UserRegistrationModel
 from django.conf import settings
-import pandas as pd
+# import pandas as pd
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
