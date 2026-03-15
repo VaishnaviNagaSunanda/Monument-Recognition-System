@@ -1,3 +1,4 @@
+from django.http import JsonResponse
 from ast import alias
 from concurrent.futures import process
 from django.shortcuts import render
@@ -247,10 +248,25 @@ monument_info = {
     },
 }
 
-def prediction(request):
-    context = {}
 
-    if request.method == 'POST' and 'monument_image' in request.FILES:
+from django.http import JsonResponse
+from django.shortcuts import render
+from django.views.decorators.csrf import csrf_exempt
+from django.core.files.storage import FileSystemStorage
+import tensorflow as tf
+import numpy as np
+from tensorflow.keras.preprocessing import image
+
+
+@csrf_exempt
+def prediction(request):
+
+    # If user opens page in browser
+    if request.method == "GET":
+        return render(request, "users/monument_prediction.html")
+
+    # If image uploaded
+    if request.method == "POST" and 'monument_image' in request.FILES:
 
         # Load model
         model = tf.keras.models.load_model(
@@ -273,7 +289,6 @@ def prediction(request):
         predicted_index = np.argmax(predictions[0])
         confidence = float(np.max(predictions[0])) * 100
 
-        # Confidence threshold check
         THRESHOLD = 70
 
         if confidence < THRESHOLD:
@@ -284,7 +299,6 @@ def prediction(request):
         else:
             predicted_class = class_names[predicted_index]
 
-            # Get monument info
             info = monument_info.get(predicted_class, {})
             history = info.get("history", "Information not available.")
             model_3d = info.get("3d_model_url", "")
@@ -292,13 +306,108 @@ def prediction(request):
 
         confidence = round(confidence, 2)
 
-        context.update({
-            'uploaded_file_url': fs.url(file_path),
-            'predicted_class': predicted_class,
-            'confidence': confidence,
-            'history': history,
-            'model_3d': model_3d,
-            'map_link': map_link,
+        # If request comes from Expo mobile app
+        if "application/json" in request.headers.get("Accept", ""):
+            return JsonResponse({
+                "uploaded_image": fs.url(file_path),
+                "predicted_class": predicted_class,
+                "confidence": confidence,
+                "history": history,
+                "model_3d": model_3d,
+                "map_link": map_link
+            })
+
+        # If request comes from browser form
+        return render(request, "users/monument_prediction.html", {
+            "uploaded_file_url": fs.url(file_path),
+            "predicted_class": predicted_class,
+            "confidence": confidence,
+            "history": history,
+            "model_3d": model_3d,
+            "map_link": map_link,
         })
 
-    return render(request, 'users/monument_prediction.html', context)
+    return JsonResponse({"error": "Invalid request"})
+
+
+    # ---------- Browser Prediction ----------
+@csrf_exempt
+def prediction(request):
+
+    if request.method == "GET":
+        return render(request, "users/monument_prediction.html")
+
+    if request.method == "POST" and 'monument_image' in request.FILES:
+
+        model = tf.keras.models.load_model(
+            r"C:\Users\hp\OneDrive\Desktop\75.Monuments_detection (6)\Monuments_detection\Code\Monuments_Identification\models\trained_model.keras"
+        )
+
+        uploaded_file = request.FILES['monument_image']
+        fs = FileSystemStorage()
+        file_path = fs.save(uploaded_file.name, uploaded_file)
+        full_path = fs.path(file_path)
+
+        img = image.load_img(full_path, target_size=(300, 300))
+        img_array = image.img_to_array(img)/255.0
+        img_batch = np.expand_dims(img_array, axis=0)
+
+        predictions = model.predict(img_batch)
+
+        predicted_index = np.argmax(predictions[0])
+        confidence = float(np.max(predictions[0])) * 100
+
+        predicted_class = class_names[predicted_index]
+
+        info = monument_info.get(predicted_class, {})
+
+        return render(request, "users/monument_prediction.html",{
+            "uploaded_file_url": fs.url(file_path),
+            "predicted_class": predicted_class,
+            "confidence": round(confidence,2),
+            "history": info.get("history",""),
+            "map_link": info.get("map_location",""),
+            "model_3d": info.get("3d_model_url","")
+        })
+
+    return JsonResponse({"error": "Invalid request"})
+
+
+# ---------- Mobile API Prediction ----------
+@csrf_exempt
+def api_predict(request):
+
+    if request.method == 'POST' and 'monument_image' in request.FILES:
+
+        model = tf.keras.models.load_model(
+            r"C:\Users\hp\OneDrive\Desktop\75.Monuments_detection (6)\Monuments_detection\Code\Monuments_Identification\models\trained_model.keras"
+        )
+
+        uploaded_file = request.FILES['monument_image']
+        fs = FileSystemStorage()
+        file_path = fs.save(uploaded_file.name, uploaded_file)
+        full_path = fs.path(file_path)
+
+        img = image.load_img(full_path, target_size=(300, 300))
+        img_array = image.img_to_array(img)/255.0
+        img_batch = np.expand_dims(img_array, axis=0)
+
+        predictions = model.predict(img_batch)
+
+        predicted_index = np.argmax(predictions[0])
+        confidence = float(np.max(predictions[0])) * 100
+
+        predicted_class = class_names[predicted_index]
+
+        info = monument_info.get(predicted_class, {})
+
+        return JsonResponse({
+            "uploaded_image": fs.url(file_path),
+            "predicted_class": predicted_class,
+            "confidence": round(confidence,2),
+            "history": info.get("history",""),
+            "map_link": info.get("map_location",""),
+            "model_3d": info.get("3d_model_url","")
+        })
+
+    return JsonResponse({"error":"Invalid request"})
