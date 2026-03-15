@@ -34,7 +34,7 @@ idna==3.11
 itsdangerous==2.2.0
 Jinja2==3.1.6
 joblib==1.5.3
-kaggle==2.0.0
+kaggle==1.6.17
 kagglesdk==0.1.16
 keras==2.15.0
 kiwisolver==1.4.9
