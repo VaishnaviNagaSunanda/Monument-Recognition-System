@@ -1,1 +1,1 @@
-web: gunicorn Monuments_Identification.wsgi
+web: gunicorn Monuments_Identification.wsgi --workers 1 --threads 2
