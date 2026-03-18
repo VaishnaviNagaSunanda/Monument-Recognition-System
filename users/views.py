@@ -331,12 +331,17 @@ def prediction(request):
 
 
     # ---------- Browser Prediction ----------
+# ================= KEEP EVERYTHING SAME ABOVE =================
+
+
 @csrf_exempt
 def prediction(request):
 
+    # If user opens page in browser
     if request.method == "GET":
         return render(request, "users/monument_prediction.html")
 
+    # If image uploaded
     if request.method == "POST" and 'monument_image' in request.FILES:
 
         model = tf.keras.models.load_model(
@@ -349,31 +354,43 @@ def prediction(request):
         full_path = fs.path(file_path)
 
         img = image.load_img(full_path, target_size=(300, 300))
-        img_array = image.img_to_array(img)/255.0
+        img_array = image.img_to_array(img) / 255.0
         img_batch = np.expand_dims(img_array, axis=0)
 
         predictions = model.predict(img_batch)
-
         predicted_index = np.argmax(predictions[0])
         confidence = float(np.max(predictions[0])) * 100
 
-        predicted_class = class_names[predicted_index]
+        THRESHOLD = 70
 
-        info = monument_info.get(predicted_class, {})
+        if confidence < THRESHOLD:
+            predicted_class = "Invalid Image"
+            history = "This image does not belong to the trained monuments dataset."
+            model_3d = ""
+            map_link = ""
+        else:
+            predicted_class = class_names[predicted_index]
+            info = monument_info.get(predicted_class, {})
+            history = info.get("history", "Information not available.")
+            model_3d = info.get("3d_model_url", "")
+            map_link = info.get("map_location", "")
 
-        return render(request, "users/monument_prediction.html",{
+        confidence = round(confidence, 2)
+
+        return render(request, "users/monument_prediction.html", {
             "uploaded_file_url": fs.url(file_path),
             "predicted_class": predicted_class,
-            "confidence": round(confidence,2),
-            "history": info.get("history",""),
-            "map_link": info.get("map_location",""),
-            "model_3d": info.get("3d_model_url","")
+            "confidence": confidence,
+            "history": history,
+            "model_3d": model_3d,
+            "map_link": map_link,
         })
 
     return JsonResponse({"error": "Invalid request"})
 
 
-# ---------- Mobile API Prediction ----------
+# ================= MOBILE API =================
+
 @csrf_exempt
 def api_predict(request):
 
@@ -398,7 +415,6 @@ def api_predict(request):
         confidence = float(np.max(predictions[0])) * 100
 
         predicted_class = class_names[predicted_index]
-
         info = monument_info.get(predicted_class, {})
 
         return JsonResponse({
